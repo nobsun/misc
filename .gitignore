@@ -1,0 +1,8 @@
+.stack-work/
+dist-new/
+misc.cabal
+*.log
+core
+*.hi
+*.o
+*~
