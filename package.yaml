@@ -25,6 +25,7 @@ dependencies:
 - bytestring
 - utf8-string
 - hspec
+- time
 
 library:
   source-dirs: src
@@ -53,6 +54,18 @@ executables:
     source-dirs:         app/lazylist
     ghc-options:
     - -rtsopts
+    dependencies:
+    - misc
+
+  bubble:
+    main:                Main.hs
+    source-dirs:         app/sorting
+    dependencies:
+    - misc
+
+  fizzbuzz:
+    main:                Main.hs
+    source-dirs:         app/fizzbuzz
     dependencies:
     - misc
 

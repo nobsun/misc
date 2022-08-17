@@ -6,8 +6,8 @@ import System.IO.Unsafe ( unsafeInterleaveIO )
 
 data Style
     = Sequential
-    | PointWise
-    | PointFree
+    | Applicative
+    | Interactive
     deriving (Eq, Show, Read)
 
 data IOStyle
@@ -30,15 +30,30 @@ skewappend = \ case
         { x <- getLine
         ; y <- getLine
         ; z <- getLine
-        ; putStrLn (z ++ x ++ y)
+        ; putStrLn (f x y z)
         }
     (Sequential, Lazy) -> do
         { x <- lzGetLine
         ; y <- lzGetLine
         ; z <- lzGetLine
-        ; putStrLn (z ++ x ++ y)
+        ; putStrLn (f x y z)
         }
-    _           -> error "not yet"
+    (Sequential, Mixed) -> do
+        { x <- lzGetLine
+        ; y <- lzGetLine
+        ; z <- lzGetLine
+        ; putStrLn (g x y z)
+        }
+    (Applicative, Strict) -> putStrLn =<< f <$> getLine   <*> getLine   <*> getLine
+    (Applicative, Lazy)   -> putStrLn =<< f <$> lzGetLine <*> lzGetLine <*> lzGetLine
+    (Applicative, Mixed)  -> putStrLn =<< g <$> lzGetLine <*> lzGetLine <*> lzGetLine
+    (Interactive, Mixed)  -> interact h
+    _                     -> error "not implemented"
+    where
+        f a b c    = c ++ a ++ b
+        g !a !b !c = f a b c
+        h cs = case take 3 (lines cs) of
+            [a,b,c] -> unlines [f a b c]
 
 lzGetLine :: IO String
 lzGetLine = lazy getLine
