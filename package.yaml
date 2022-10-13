@@ -26,6 +26,11 @@ dependencies:
 - utf8-string
 - hspec
 - time
+- extra
+- parallel
+- recursion-schemes
+- random
+- random-shuffle
 
 library:
   source-dirs: src
@@ -66,6 +71,34 @@ executables:
   fizzbuzz:
     main:                Main.hs
     source-dirs:         app/fizzbuzz
+    dependencies:
+    - misc
+
+  sorting:
+    main:                Main.hs
+    source-dirs:         app/sorting
+    dependencies:
+    - misc
+
+  random:
+    main:                Main.hs
+    source-dirs:         app/random
+    dependencies:
+    - misc
+
+  vm:
+    main:                Main.hs
+    source-dirs:         app/vm
+    dependencies:
+    - misc
+
+  trapezoid:
+    main:                Main.hs
+    source-dirs:         app/trapezoid
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    - -with-rtsopts=-N
     dependencies:
     - misc
 

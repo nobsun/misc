@@ -1,72 +1,93 @@
+{-# LANGUAGE NPlusKPatterns #-}
+{-# LANGUAGE BangPatterns #-}
 module Main where
 
-import Data.List
-import Data.Ord
+import Control.Arrow (second)
+import System.Environment
+-- import Sort
+import Data.Char
+import Data.List (delete, mapAccumL,isPrefixOf)
 
 main :: IO ()
-main = interact proc
+main = do
+    a:_ <- getArgs
+    if "1" `isPrefixOf` a then putStr $ unlines [show $ test1 8]
+                          else putStr $ unlines [show $ test2 8]
 
-proc :: String -> String
-proc str = case map (map readInt . words) (lines str) of
-    _ : [as] -> bubbleSorting as
+func :: String -> String
+func input = if
+    "1" `isPrefixOf` input then unlines [show $ test1 7]
+                           else unlines [show $ test2 7]
 
----
+fibc 0 k = k 0
+fibc 1 k = k 1
+fibc (n+2) k = fibc (n+1) (fibc n . (k .) . (+))
 
-bubbleSorting :: [Int] -> String
-bubbleSorting = showResult . beval
+fib 0 = 0
+fib 1 = 1
+fib (n+2) = fib (n+1) + fib n
 
-beval :: [Int] -> [[Int]]
-beval as = case bstep (0, as) of
-    (0, bs) -> []
-    (c, bs) -> bs : beval bs
+foldrc _   e []     k = k e
+foldrc phi e (x:xs) k = foldrc phi e xs $ k . phi x
 
-bstep :: (Int, [Int]) -> (Int, [Int])
-bstep s@(c, [x]) = s
-bstep (c, x:yys@(y:ys))
-    | x > y     = case bstep (succ c, x:ys) of
-        (c', zs) -> (c', y:zs)
-    | otherwise = case bstep (c, yys) of
-        (c', zs) -> (c', x:zs)
+mapAccumLc :: (a -> b -> (a,c))
+          -> a
+          -> [b]
+          -> (a -> [c] -> s)
+          -> s
+mapAccumLc phi a0 [] k = k a0 []
+mapAccumLc phi a0 (b:bs) k = case phi a0 b of
+    (a, c) -> mapAccumLc phi a bs (\ a' cs -> k a' (c:cs))
 
----
+mapAccumLcc :: (a -> b -> (a -> c -> r) -> r)
+            -> a
+            -> [b]
+            -> (a -> [c] -> r)
+            -> r
+mapAccumLcc phi a0 []     k = k a0 []
+mapAccumLcc phi a0 (b:bs) k
+    = phi a0 b (\ a c -> mapAccumLcc phi a bs (\ a' cs -> k a' (c : cs)))
 
-selectionSorting :: [Int] -> String
-selectionSorting = showResult . map (uncurry ($)) . seval . (,) id
+samplePi = map digitToInt $ filter isDigit $ show (pi :: Double)
 
-seval :: ([Int] -> [Int], [Int]) -> [([Int] -> [Int], [Int])]
-seval cs = case cs of 
-    (c, []) -> []
-    (c, xs) -> cs : seval (sstep cs)
+order, order' :: Ord a => a -> a -> (a, a)
+order x y = case compare x y of
+    GT -> (y, x)
+    _  -> (x, y)
 
+order' x y = case flip compare x y of
+    GT -> (y, x)
+    _  -> (x, y)
 
-sstep :: ([Int] -> [Int], [Int]) -> ([Int] -> [Int], [Int])
-sstep (c, xs) = case select xs of
-    (y, ys) -> (c . (y :), ys)
+orderc :: Ord a => a -> a -> (a -> a -> r) -> r
+orderc !x !y k = case compare x y of
+    GT -> k y x
+    _  -> k x y
 
-select :: Ord a => [a] -> (a, [a])
-select (x : []) = (x, [])
-select (x : xs) = case minimumBy (comparing snd) (zip [0..] xs) of
-    (i, y) 
-        | x <= y    -> (x, xs)
-        | otherwise -> (y, swap i x xs)
+select1, select2, select3, select4 :: Ord a => a -> [a] -> (a, [a])
+select1 x xs = (y, ys)
     where
-        swap j z ys = case splitAt j ys of
-            (zs, _:ws) -> zs ++ z : ws
-{- --
-select :: Ord a => [a] -> (a, [a])
-select (x : []) = (x, [])
-select (x : xs)
-    | x > y     = (y, x:ys)
-    | otherwise = (x, y:ys)
-    where
-        (y, ys) = select xs
--- -}
+        y  = minimum (x:xs)
+        ys = delete y (x:xs)
 
----
+select2 x xs = mapAccumLcc orderc x xs (,)
 
-showResult :: [[Int]] -> String
-showResult = unlines . map (unwords . map show)
+select3 x xs = mapAccumL order x xs
 
-readInt :: String -> Int
-readInt = read
+select4 x xs = mapAccumL' order x xs
 
+sample :: Int -> [Int]
+sample n = reverse $ [1 .. 10^n]
+
+test1, test2, test3 :: Int -> Int
+test1 n = fst $ select1 0 $! reverse [1 .. 10^n]
+test2 n = fst $ select2 0 $! reverse [1 .. 10^n]
+test3 n = fst $ select3 0 $! reverse [1 .. 10^n]
+test4 n = fst $ select4 0 $! reverse [1 .. 10^n]
+
+mapAccumL' :: (a -> b -> (a, c)) -> a -> [b] -> (a, [c])
+mapAccumL' phi !a0 bbs = case bbs of
+    []      -> (a0, [])
+    !b : bs -> case phi a0 b of
+        (!a, !c)   -> case mapAccumL' phi a bs of
+           (!a', cs) -> (a', c:cs)

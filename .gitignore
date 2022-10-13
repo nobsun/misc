@@ -1,5 +1,6 @@
 .stack-work/
 dist-new/
+dist-newstyle/
 misc.cabal
 *.log
 core
